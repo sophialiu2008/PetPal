@@ -1,20 +1,25 @@
 
-import React from 'react';
+import React, { useState } from 'react';
+import ImagenStudio from '../components/ImagenStudio.tsx';
+import { translations, Language } from '../translations.ts';
 
 interface Props {
   onAdopted: () => void;
   onApplications: () => void;
   onLogout: () => void;
+  language: Language;
 }
 
-const ProfilePage: React.FC<Props> = ({ onAdopted, onApplications, onLogout }) => {
+const ProfilePage: React.FC<Props> = ({ onAdopted, onApplications, onLogout, language }) => {
+  const [showStudio, setShowStudio] = useState(false);
+  const t = translations[language];
+
   const menuItems = [
-    { label: 'My Submissions', icon: 'publish', color: 'text-blue-500' },
-    { label: 'Favorites', icon: 'favorite', color: 'text-pink-500' },
-    { label: 'Adoption Applications', icon: 'assignment', color: 'text-purple-500', onClick: onApplications, badge: '2' },
-    { label: 'My Adopted Pets', icon: 'history', color: 'text-orange-500', onClick: onAdopted },
-    { label: 'Achievement Badges', icon: 'military_tech', color: 'text-yellow-500' },
-    { label: 'Settings', icon: 'settings', color: 'text-gray-500' },
+    { label: language === 'en' ? 'My Submissions' : '我的发布', icon: 'publish', color: 'text-blue-500' },
+    { label: language === 'en' ? 'Favorites' : '我的收藏', icon: 'favorite', color: 'text-pink-500' },
+    { label: language === 'en' ? 'Adoption Applications' : '领养申请', icon: 'assignment', color: 'text-purple-500', onClick: onApplications, badge: '2' },
+    { label: language === 'en' ? 'My Adopted Pets' : '已领养宠物', icon: 'history', color: 'text-orange-500', onClick: onAdopted },
+    { label: language === 'en' ? 'Settings' : '设置', icon: 'settings', color: 'text-gray-500' },
   ];
 
   return (
@@ -27,7 +32,7 @@ const ProfilePage: React.FC<Props> = ({ onAdopted, onApplications, onLogout }) =
             alt="Profile" 
             className="w-32 h-32 rounded-full border-4 border-white dark:border-dark-card shadow-2xl"
           />
-          <button className="absolute bottom-1 right-1 bg-ios-accent p-2 rounded-full text-white shadow-lg">
+          <button className="absolute bottom-1 right-1 bg-ios-accent p-2 rounded-full text-white shadow-lg active:scale-90 transition-all">
             <span className="material-symbols-outlined text-sm">edit</span>
           </button>
         </div>
@@ -53,6 +58,32 @@ const ProfilePage: React.FC<Props> = ({ onAdopted, onApplications, onLogout }) =
         </div>
       </div>
 
+      {/* AI Portrait Studio Promo Card */}
+      <div 
+        onClick={() => setShowStudio(true)}
+        className="relative h-44 rounded-ios-lg overflow-hidden shadow-2xl group cursor-pointer active:scale-[0.98] transition-all"
+      >
+        <img 
+          src="https://images.unsplash.com/photo-1541364983171-a8ba01d95cfc?auto=format&fit=crop&q=80&w=800" 
+          alt="AI Studio" 
+          className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
+        <div className="absolute inset-0 p-6 flex flex-col justify-center gap-2">
+          <div className="flex items-center gap-2 text-white">
+            <span className="material-symbols-outlined text-ios-accent">palette</span>
+            <span className="text-[10px] font-black uppercase tracking-widest">{t.aiStudio}</span>
+          </div>
+          <h2 className="text-white text-2xl font-black leading-tight max-w-[200px]">
+            {language === 'en' ? 'Turn your pet into a Masterpiece' : '将您的宠物变为艺术杰作'}
+          </h2>
+          <p className="text-white/60 text-xs font-medium">Powered by Imagen AI</p>
+          <div className="mt-2">
+             <span className="bg-ios-accent text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-tighter">Try Now</span>
+          </div>
+        </div>
+      </div>
+
       {/* Menu List */}
       <div className="bg-white dark:bg-dark-card rounded-ios overflow-hidden shadow-sm">
         {menuItems.map((item, idx) => (
@@ -70,7 +101,7 @@ const ProfilePage: React.FC<Props> = ({ onAdopted, onApplications, onLogout }) =
             </div>
             <div className="flex items-center gap-2">
               {item.badge && (
-                <span className="bg-ios-accent text-white text-[10px] font-black px-2 py-0.5 rounded-full">
+                <span className="bg-gray-200 dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-[10px] font-black px-2 py-0.5 rounded-full">
                   {item.badge}
                 </span>
               )}
@@ -84,8 +115,10 @@ const ProfilePage: React.FC<Props> = ({ onAdopted, onApplications, onLogout }) =
         onClick={onLogout}
         className="w-full h-14 bg-red-50 text-red-500 font-bold rounded-ios active:scale-95 transition-all mb-12"
       >
-        Log Out
+        {language === 'en' ? 'Log Out' : '退出登录'}
       </button>
+
+      {showStudio && <ImagenStudio onClose={() => setShowStudio(false)} language={language} />}
     </div>
   );
 };

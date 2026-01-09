@@ -62,6 +62,17 @@ export const translations = {
     beautifying: 'Beautifying...',
     animate: 'Animate with AI',
     generatingVideo: 'Making it move...',
+    aiStudio: 'AI Portrait Studio',
+    imaginePrompt: 'Describe your dream pet...',
+    generateArt: 'Generate Art',
+    generatingArt: 'Creating Masterpiece...',
+    styles: {
+      cinematic: 'Cinematic',
+      pixar: 'Pixar Style',
+      watercolor: 'Watercolor',
+      studio: 'Studio',
+      cyberpunk: 'Cyberpunk'
+    },
     waitingMessages: [
       'Teaching them to wag their tail...',
       'Capturing the cuteness...',
@@ -131,6 +142,17 @@ export const translations = {
     beautifying: '正在美化照片...',
     animate: 'AI 动效增强',
     generatingVideo: '正在教它摇尾巴...',
+    aiStudio: 'AI 肖像工作室',
+    imaginePrompt: '描述你梦中的宠物...',
+    generateArt: '生成艺术照',
+    generatingArt: '正在创作杰作...',
+    styles: {
+      cinematic: '电影感',
+      pixar: '皮克斯风格',
+      watercolor: '水彩画',
+      studio: '影棚写实',
+      cyberpunk: '赛博朋克'
+    },
     waitingMessages: [
       '正在教它学会卖萌...',
       '正在捕捉可爱的瞬间...',

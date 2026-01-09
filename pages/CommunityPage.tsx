@@ -45,14 +45,15 @@ const CommunityPage: React.FC<{ language: Language }> = ({ language }) => {
     if (isGeneratingVideo) {
       timer = window.setInterval(() => {
         setWaitingMsgIdx(prev => (prev + 1) % t.waitingMessages.length);
-      }, 3000);
+      }, 4000);
     }
     return () => clearInterval(timer);
-  }, [isGeneratingVideo]);
+  }, [isGeneratingVideo, t.waitingMessages.length]);
 
   const handleAnimateImage = async () => {
     if (!selectedImage || isGeneratingVideo) return;
 
+    // Veo Requirement: Check for API Key selection
     const hasKey = await (window as any).aistudio?.hasSelectedApiKey();
     if (!hasKey) {
       await (window as any).aistudio?.openSelectKey();
@@ -68,32 +69,66 @@ const CommunityPage: React.FC<{ language: Language }> = ({ language }) => {
         reader.readAsDataURL(blob);
       });
 
+      // Always create a fresh instance right before the call to ensure up-to-date key
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || "" });
-      let operation = await ai.models.generateVideos({
-        model: 'veo-3.1-fast-generate-preview',
-        prompt: 'A cute pet subtly wagging its tail and looking around happily, high quality, realistic',
-        image: {
-          imageBytes: base64Data,
-          mimeType: 'image/jpeg',
-        },
-        config: { numberOfVideos: 1, resolution: '720p', aspectRatio: '1:1' }
-      });
+      
+      let operation;
+      try {
+        operation = await ai.models.generateVideos({
+          model: 'veo-3.1-fast-generate-preview',
+          prompt: 'A cute pet subtly wagging its tail and looking around happily, realistic movements, high quality, soft cinematic lighting',
+          image: {
+            imageBytes: base64Data,
+            mimeType: 'image/jpeg',
+          },
+          config: { 
+            numberOfVideos: 1, 
+            resolution: '720p', 
+            aspectRatio: '9:16'
+          }
+        });
+      } catch (e: any) {
+        // Robust handling for reported RPC 500 / XHR / Project errors
+        const errorMsg = e.message || "";
+        console.error("Veo API Error:", e);
+        
+        if (
+          errorMsg.includes("Requested entity was not found") || 
+          errorMsg.includes("Rpc failed") || 
+          errorMsg.includes("500") ||
+          errorMsg.includes("xhr error")
+        ) {
+          console.warn("API Error encountered (potentially project restriction). Prompting for key selection...");
+          await (window as any).aistudio?.openSelectKey();
+          throw new Error(language === 'en' 
+            ? "Your API key might be missing billing or restricted. Please select a valid paid project key."
+            : "您的 API 密钥可能未启用计费或受限。请选择一个有效的已付费项目密钥。");
+        }
+        throw e;
+      }
 
+      // Polling for completion
       while (!operation.done) {
         await new Promise(resolve => setTimeout(resolve, 5000));
         operation = await ai.operations.getVideosOperation({ operation: operation });
       }
 
       const downloadLink = operation.response?.generatedVideos?.[0]?.video?.uri;
+      if (!downloadLink) throw new Error("Video generation failed: No output URI received.");
+
+      // Fetch with the selected API key
       const videoResponse = await fetch(`${downloadLink}&key=${process.env.API_KEY}`);
+      if (!videoResponse.ok) throw new Error("Failed to download generated video content.");
+      
       const videoBlob = await videoResponse.blob();
       const videoUrl = URL.createObjectURL(videoBlob);
       
+      setSelectedImage(null);
       const newPost: Post = {
         id: Date.now(),
         user: 'Alex Johnson',
         avatar: 'https://i.pravatar.cc/150?u=user123',
-        content: newPostContent,
+        content: newPostContent || 'Check out my pet in action! 🐾',
         image: selectedImage,
         video: videoUrl,
         likes: 0,
@@ -103,10 +138,10 @@ const CommunityPage: React.FC<{ language: Language }> = ({ language }) => {
       };
       setPosts([newPost, ...posts]);
       setShowCreatePost(false);
-      setSelectedImage(null);
       setNewPostContent('');
-    } catch (error) {
+    } catch (error: any) {
       console.error("Video generation failed:", error);
+      alert(error.message || "Something went wrong. Please ensure you've selected a valid API key with billing enabled.");
     } finally {
       setIsGeneratingVideo(false);
     }
@@ -138,7 +173,7 @@ const CommunityPage: React.FC<{ language: Language }> = ({ language }) => {
       </header>
 
       <div className="flex-1 overflow-y-auto no-scrollbar px-6 space-y-8 pb-32">
-        {posts.map((post, i) => (
+        {posts.map((post) => (
           <div key={post.id} className="bg-white dark:bg-dark-card rounded-ios-lg overflow-hidden shadow-sm animate-slide-up">
             <div className="p-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -146,14 +181,14 @@ const CommunityPage: React.FC<{ language: Language }> = ({ language }) => {
                 <div><h3 className="font-bold text-sm dark:text-white">{post.user}</h3><p className="text-[10px] text-ios-secondary uppercase">{post.time}</p></div>
               </div>
             </div>
-            <div className="relative aspect-square overflow-hidden mx-2 rounded-2xl">
+            <div className={`relative ${post.video ? 'aspect-[9/16]' : 'aspect-square'} overflow-hidden mx-2 rounded-2xl bg-gray-100 dark:bg-black/20`}>
               {post.video ? (
                 <video src={post.video} autoPlay loop muted playsInline className="w-full h-full object-cover" />
               ) : (
-                <img src={post.image} className="w-full h-full object-cover" />
+                <img src={post.image} className="w-full h-full object-cover" alt="Post content" />
               )}
               {post.video && (
-                <div className="absolute top-2 right-2 bg-black/40 backdrop-blur-md px-2 py-1 rounded-lg text-[8px] text-white font-black uppercase tracking-widest">
+                <div className="absolute top-2 right-2 bg-black/40 backdrop-blur-md px-2 py-1 rounded-lg text-[8px] text-white font-black uppercase tracking-widest border border-white/10">
                   AI Video
                 </div>
               )}
@@ -177,16 +212,23 @@ const CommunityPage: React.FC<{ language: Language }> = ({ language }) => {
       {showCreatePost && (
         <div className="fixed inset-0 z-[100] bg-ios-bg dark:bg-dark-bg flex flex-col animate-fade-in">
           {isGeneratingVideo && (
-            <div className="absolute inset-0 z-[110] bg-black/80 backdrop-blur-xl flex flex-col items-center justify-center text-center p-12 space-y-8">
-              <div className="relative w-24 h-24">
-                <div className="absolute inset-0 border-4 border-ios-accent border-t-transparent rounded-full animate-spin" />
+            <div className="absolute inset-0 z-[110] bg-black/90 backdrop-blur-2xl flex flex-col items-center justify-center text-center p-12 space-y-10">
+              <div className="relative">
+                <div className="w-32 h-32 border-[6px] border-ios-accent/20 border-t-ios-accent rounded-full animate-spin shadow-2xl" />
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="material-symbols-outlined text-ios-accent text-3xl animate-bounce">pets</span>
+                  <span className="material-symbols-outlined text-ios-accent text-5xl animate-bounce">pets</span>
                 </div>
               </div>
-              <div className="space-y-2">
-                <h3 className="text-2xl font-black text-white">{t.generatingVideo}</h3>
-                <p className="text-gray-400 font-bold italic transition-all duration-1000">{t.waitingMessages[waitingMsgIdx]}</p>
+              <div className="space-y-4 max-w-xs">
+                <h3 className="text-3xl font-black text-white tracking-tight">{t.generatingVideo}</h3>
+                <p className="text-gray-400 font-bold italic h-12 flex items-center justify-center transition-all duration-1000">
+                  {t.waitingMessages[waitingMsgIdx]}
+                </p>
+                <div className="pt-8">
+                  <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
+                    <div className="bg-ios-accent h-full animate-pulse" style={{ width: '100%' }} />
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -208,33 +250,48 @@ const CommunityPage: React.FC<{ language: Language }> = ({ language }) => {
             >Post</button>
           </header>
 
-          <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          <div className="flex-1 overflow-y-auto p-6 space-y-6 no-scrollbar">
             <input type="file" accept="image/*" hidden ref={fileInputRef} onChange={(e) => {
               const file = e.target.files?.[0];
               if (file) setSelectedImage(URL.createObjectURL(file));
             }} />
             
             {selectedImage ? (
-              <div className="relative aspect-square rounded-ios overflow-hidden group">
+              <div className="relative aspect-square rounded-ios overflow-hidden group shadow-2xl">
                 <img src={selectedImage} alt="Selected" className="w-full h-full object-cover" />
-                <div className="absolute top-4 right-4 flex flex-col gap-2">
-                   <button onClick={() => setSelectedImage(null)} className="bg-black/40 backdrop-blur-md p-2 rounded-full text-white"><span className="material-symbols-outlined text-sm">close</span></button>
-                   <button 
-                    onClick={handleAnimateImage}
-                    className="bg-ios-accent p-2 rounded-full text-white shadow-xl flex items-center gap-2 pr-4 active:scale-95 transition-all"
-                   >
-                     <span className="material-symbols-outlined text-sm">auto_videocam</span>
-                     <span className="text-[10px] font-black uppercase tracking-widest">{t.animate}</span>
+                <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors" />
+                <div className="absolute top-4 right-4 flex flex-col gap-3">
+                   <button onClick={() => setSelectedImage(null)} className="bg-white/90 backdrop-blur-md p-2 rounded-full text-black shadow-lg hover:scale-110 active:scale-90 transition-all">
+                    <span className="material-symbols-outlined text-sm">close</span>
                    </button>
+                   <div className="flex flex-col gap-1 items-end">
+                    <button 
+                      onClick={handleAnimateImage}
+                      className="bg-ios-accent p-3 rounded-full text-white shadow-2xl flex items-center gap-2 pr-5 hover:scale-105 active:scale-95 transition-all"
+                    >
+                      <span className="material-symbols-outlined text-xl">auto_videocam</span>
+                      <span className="text-xs font-black uppercase tracking-widest">{t.animate}</span>
+                    </button>
+                    <a 
+                      href="https://ai.google.dev/gemini-api/docs/billing" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-[8px] text-white/60 font-bold uppercase tracking-tighter underline pt-1 px-2"
+                    >
+                      Billing Info Required
+                    </a>
+                   </div>
                 </div>
               </div>
             ) : (
-              <button onClick={() => fileInputRef.current?.click()} className="w-full aspect-square bg-white dark:bg-dark-card rounded-ios border-2 border-dashed border-gray-200 flex flex-col items-center justify-center gap-3">
-                <span className="material-symbols-outlined text-ios-secondary text-3xl">add_a_photo</span>
-                <p className="font-bold dark:text-white">Select Photo</p>
+              <button onClick={() => fileInputRef.current?.click()} className="w-full aspect-square bg-white dark:bg-dark-card rounded-ios border-2 border-dashed border-gray-200 dark:border-gray-800 flex flex-col items-center justify-center gap-4 transition-colors hover:border-ios-accent/40">
+                <div className="w-16 h-16 rounded-full bg-ios-bg dark:bg-black/20 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-ios-accent text-3xl">add_a_photo</span>
+                </div>
+                <p className="font-bold dark:text-white">Select Photo to Animate</p>
               </button>
             )}
-            <textarea value={newPostContent} onChange={(e) => setNewPostContent(e.target.value)} placeholder="What's on your mind?" className="w-full bg-transparent border-none text-xl font-medium dark:text-white outline-none resize-none min-h-[150px]" />
+            <textarea value={newPostContent} onChange={(e) => setNewPostContent(e.target.value)} placeholder="What's on your mind? Tell us about your pet's new moves..." className="w-full bg-transparent border-none text-xl font-medium dark:text-white outline-none resize-none min-h-[150px]" />
           </div>
         </div>
       )}
