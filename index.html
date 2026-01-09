@@ -1,0 +1,120 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>PawPal - Pet Adoption</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
+    <!-- Amap JS API - Security Config for standard web usage -->
+    <script type="text/javascript">
+        window._AMapSecurityConfig = {
+            securityJsCode: 'df93710773d5796489379669528e576a', // Conceptual placeholder
+        };
+    </script>
+    <script type="text/javascript" src="https://webapi.amap.com/maps?v=2.0&key=03c73f55e099951737e4663e0202271a&plugin=AMap.Autocomplete,AMap.PlaceSearch,AMap.Geocoder"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        ios: {
+                            bg: '#F2F2F7',
+                            card: '#FFFFFF',
+                            accent: '#F20D59',
+                            text: '#000000',
+                            secondary: '#8E8E93',
+                            blur: 'rgba(255, 255, 255, 0.7)'
+                        },
+                        dark: {
+                            bg: '#000000',
+                            card: '#1C1C1E',
+                            text: '#FFFFFF',
+                            secondary: '#8E8E93',
+                            blur: 'rgba(28, 28, 30, 0.8)'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+                    },
+                    borderRadius: {
+                        'ios': '24px',
+                        'ios-lg': '32px'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @supports (-webkit-touch-callout: none) {
+            .h-screen { height: -webkit-fill-available; }
+        }
+        .apple-blur {
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+        .animate-float { animation: float 4s ease-in-out infinite; }
+
+        @keyframes pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+        .animate-pop { 
+            animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+        }
+
+        @keyframes badge-in {
+            0% { opacity: 0; transform: translateY(-4px) scale(0.9); filter: blur(4px); }
+            100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+        }
+        .animate-badge-in {
+            animation: badge-in 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        }
+
+        @keyframes slide-up {
+            0% { opacity: 0; transform: translateY(20px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+        .animate-slide-up {
+            animation: slide-up 0.6s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+        }
+
+        @keyframes fade-in {
+            0% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+        .animate-fade-in {
+            animation: fade-in 0.5s ease-out forwards;
+        }
+
+        /* Custom Amap styles for Apple Look */
+        .amap-logo, .amap-copyright { display: none !important; }
+        .amap-marker-label { border: none; background: transparent; }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "@google/genai": "https://esm.sh/@google/genai@^1.35.0"
+  }
+}
+</script>
+</head>
+<body class="bg-ios-bg dark:bg-dark-bg transition-colors duration-500 overflow-hidden">
+    <div id="root"></div>
+</body>
+</html>

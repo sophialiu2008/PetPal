@@ -1,0 +1,9 @@
+{
+  "name": "PawPal - Apple Aesthetic Pet Adoption",
+  "description": "A high-fidelity pet adoption application designed with Apple's minimal aesthetic, featuring glassmorphism, spring animations, and a seamless user experience.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation"
+  ]
+}
