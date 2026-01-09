@@ -1,22 +1,22 @@
 
 import React, { useState, useEffect } from 'react';
-import { Page, Pet } from './types';
-import { PETS } from './constants';
-import WelcomePage from './pages/WelcomePage';
-import HomePage from './pages/HomePage';
-import DetailsPage from './pages/DetailsPage';
-import ProfilePage from './pages/ProfilePage';
-import CommunityPage from './pages/CommunityPage';
-import MapPage from './pages/MapPage';
-import PostPage from './pages/PostPage';
-import GuidePage from './pages/GuidePage';
-import AdoptedPage from './pages/AdoptedPage';
-import MessagesPage from './pages/MessagesPage';
-import ApplicationsPage from './pages/ApplicationsPage';
-import TabBar from './components/TabBar';
-import DynamicIsland from './components/DynamicIsland';
-import AIAssistant from './components/AIAssistant';
-import { translations, Language } from './translations';
+import { Page, Pet } from './types.ts';
+import { PETS } from './constants.tsx';
+import WelcomePage from './pages/WelcomePage.tsx';
+import HomePage from './pages/HomePage.tsx';
+import DetailsPage from './pages/DetailsPage.tsx';
+import ProfilePage from './pages/ProfilePage.tsx';
+import CommunityPage from './pages/CommunityPage.tsx';
+import MapPage from './pages/MapPage.tsx';
+import PostPage from './pages/PostPage.tsx';
+import GuidePage from './pages/GuidePage.tsx';
+import AdoptedPage from './pages/AdoptedPage.tsx';
+import MessagesPage from './pages/MessagesPage.tsx';
+import ApplicationsPage from './pages/ApplicationsPage.tsx';
+import TabBar from './components/TabBar.tsx';
+import DynamicIsland from './components/DynamicIsland.tsx';
+import AIAssistant from './components/AIAssistant.tsx';
+import { translations, Language } from './translations.ts';
 
 declare const AMap: any;
 
@@ -53,7 +53,7 @@ const App: React.FC = () => {
         (position) => {
           const { latitude, longitude } = position.coords;
           setUserLocation({ lat: latitude, lng: longitude });
-          if (typeof AMap !== 'undefined') {
+          if (typeof AMap !== 'undefined' && AMap.Geocoder) {
             const geocoder = new AMap.Geocoder();
             geocoder.getAddress([longitude, latitude], (status: string, result: any) => {
               if (status === 'complete' && result.regeocode) {

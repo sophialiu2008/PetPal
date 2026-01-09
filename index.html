@@ -8,13 +8,20 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
-    <!-- Amap JS API - Security Config for standard web usage -->
+    
+    <!-- Process Shim for Browser -->
+    <script>
+        window.process = window.process || { env: { API_KEY: "" } };
+    </script>
+
+    <!-- Amap JS API - Security Config -->
     <script type="text/javascript">
         window._AMapSecurityConfig = {
-            securityJsCode: 'df93710773d5796489379669528e576a', // Conceptual placeholder
+            securityJsCode: 'df93710773d5796489379669528e576a',
         };
     </script>
     <script type="text/javascript" src="https://webapi.amap.com/maps?v=2.0&key=03c73f55e099951737e4663e0202271a&plugin=AMap.Autocomplete,AMap.PlaceSearch,AMap.Geocoder"></script>
+    
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -75,14 +82,6 @@
             animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
         }
 
-        @keyframes badge-in {
-            0% { opacity: 0; transform: translateY(-4px) scale(0.9); filter: blur(4px); }
-            100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
-        }
-        .animate-badge-in {
-            animation: badge-in 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
-        }
-
         @keyframes slide-up {
             0% { opacity: 0; transform: translateY(20px); }
             100% { opacity: 1; transform: translateY(0); }
@@ -98,10 +97,8 @@
         .animate-fade-in {
             animation: fade-in 0.5s ease-out forwards;
         }
-
-        /* Custom Amap styles for Apple Look */
+        
         .amap-logo, .amap-copyright { display: none !important; }
-        .amap-marker-label { border: none; background: transparent; }
     </style>
 <script type="importmap">
 {
@@ -116,5 +113,7 @@
 </head>
 <body class="bg-ios-bg dark:bg-dark-bg transition-colors duration-500 overflow-hidden">
     <div id="root"></div>
+    <!-- Entry Point -->
+    <script type="module" src="./index.tsx"></script>
 </body>
 </html>

@@ -56,7 +56,18 @@ export const translations = {
     postAdoption: 'Post Adoption',
     petPhotos: 'Pet Photos',
     basicInfo: 'Basic Info',
-    petStory: 'Their Story'
+    petStory: 'Their Story',
+    findShelters: 'Find Nearby Shelters',
+    beautify: 'AI Beautify',
+    beautifying: 'Beautifying...',
+    animate: 'Animate with AI',
+    generatingVideo: 'Making it move...',
+    waitingMessages: [
+      'Teaching them to wag their tail...',
+      'Capturing the cuteness...',
+      'Adding some magic sparkles...',
+      'Almost ready to show you!'
+    ]
   },
   zh: {
     explore: '探索',
@@ -114,7 +125,18 @@ export const translations = {
     postAdoption: '发布领养',
     petPhotos: '宠物照片',
     basicInfo: '基本信息',
-    petStory: '背后的故事'
+    petStory: '背后的故事',
+    findShelters: '寻找周边救助站',
+    beautify: 'AI 智能美化',
+    beautifying: '正在美化照片...',
+    animate: 'AI 动效增强',
+    generatingVideo: '正在教它摇尾巴...',
+    waitingMessages: [
+      '正在教它学会卖萌...',
+      '正在捕捉可爱的瞬间...',
+      '正在添加一些魔法...',
+      '马上就要准备好啦！'
+    ]
   }
 };
 

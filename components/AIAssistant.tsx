@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { GoogleGenAI, Modality, LiveServerMessage } from "@google/genai";
-import { translations, Language } from '../translations';
+import { translations, Language } from '../translations.ts';
 
 interface Props {
   onClose: () => void;
@@ -37,7 +37,13 @@ const AIAssistant: React.FC<Props> = ({ onClose, language }) => {
   };
 
   const startVoiceSession = async () => {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const apiKey = process?.env?.API_KEY || "";
+    if (!apiKey) {
+       console.error("API Key missing");
+       return;
+    }
+
+    const ai = new GoogleGenAI({ apiKey });
     audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
     
     const sessionPromise = ai.live.connect({
@@ -105,7 +111,8 @@ const AIAssistant: React.FC<Props> = ({ onClose, language }) => {
     setLoading(true);
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const apiKey = process?.env?.API_KEY || "";
+      const ai = new GoogleGenAI({ apiKey });
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: messageToSend,

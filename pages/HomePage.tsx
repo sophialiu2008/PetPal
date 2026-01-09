@@ -1,10 +1,10 @@
 
 import React, { useState } from 'react';
-import { Pet, PetType } from '../types';
-import { PETS } from '../constants';
-import SearchOverlay from '../components/SearchOverlay';
-import VisualMatchOverlay from '../components/VisualMatchOverlay';
-import { translations, Language } from '../translations';
+import { Pet, PetType } from '../types.ts';
+import { PETS } from '../constants.tsx';
+import SearchOverlay from '../components/SearchOverlay.tsx';
+import VisualMatchOverlay from '../components/VisualMatchOverlay.tsx';
+import { translations, Language } from '../translations.ts';
 
 interface Props {
   onSelectPet: (pet: Pet) => void;

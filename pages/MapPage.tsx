@@ -1,7 +1,9 @@
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Pet, PetType } from '../types';
-import { PETS } from '../constants';
+import { GoogleGenAI } from "@google/genai";
+import { Pet, PetType } from '../types.ts';
+import { PETS } from '../constants.tsx';
+import { translations, Language } from '../translations.ts';
 
 declare const AMap: any;
 
@@ -9,25 +11,20 @@ interface Props {
   onSelectPet: (pet: Pet) => void;
   userLocation: { lat: number; lng: number } | null;
   isDarkMode: boolean;
+  language: Language;
 }
 
-const MapPage: React.FC<Props> = ({ onSelectPet, userLocation, isDarkMode }) => {
+const MapPage: React.FC<Props> = ({ onSelectPet, userLocation, isDarkMode, language }) => {
+  const t = translations[language];
   const mapRef = useRef<HTMLDivElement>(null);
   const [mapInstance, setMapInstance] = useState<any>(null);
   const [selectedPet, setSelectedPet] = useState<Pet | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<PetType>('All');
-  const [showSearchHere, setShowSearchHere] = useState(false);
+  const [isSearchingShelters, setIsSearchingShelters] = useState(false);
+  const [shelterMarkers, setShelterMarkers] = useState<any[]>([]);
   
   const infoWindowRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
-
-  // 模拟刷新当前区域的宠物
-  const handleSearchThisArea = () => {
-    setShowSearchHere(false);
-    // 这里可以加入触觉反馈和加载动画
-    if ('vibrate' in navigator) navigator.vibrate(10);
-  };
 
   useEffect(() => {
     if (mapRef.current && typeof AMap !== 'undefined' && !mapInstance) {
@@ -36,7 +33,7 @@ const MapPage: React.FC<Props> = ({ onSelectPet, userLocation, isDarkMode }) => 
         center: userLocation ? [userLocation.lng, userLocation.lat] : [-122.4194, 37.7749],
         mapStyle: isDarkMode ? 'amap://styles/dark' : 'amap://styles/light',
         viewMode: '3D',
-        pitch: 35, // 稍微倾斜，更有空间感
+        pitch: 35,
       });
 
       setMapInstance(map);
@@ -45,11 +42,7 @@ const MapPage: React.FC<Props> = ({ onSelectPet, userLocation, isDarkMode }) => 
         isCustom: true,
         offset: new AMap.Pixel(0, -60),
         autoMove: true,
-        autoMoveOffset: 100,
       });
-
-      // 监听地图拖动，显示“搜索此区域”
-      map.on('moveend', () => setShowSearchHere(true));
 
       map.on('click', () => {
         infoWindowRef.current.close();
@@ -58,11 +51,72 @@ const MapPage: React.FC<Props> = ({ onSelectPet, userLocation, isDarkMode }) => 
     }
   }, [userLocation]);
 
-  // 处理分类过滤
+  const findNearbyShelters = async () => {
+    if (!userLocation || isSearchingShelters) return;
+    setIsSearchingShelters(true);
+
+    try {
+      const ai = new GoogleGenAI({ apiKey: process?.env?.API_KEY || "" });
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash-lite-latest",
+        contents: language === 'en' 
+          ? "Find 3 pet adoption shelters or animal rescues near me." 
+          : "查找我附近的3个宠物领养中心或动物救助站。",
+        config: {
+          tools: [{ googleMaps: {} }],
+          toolConfig: {
+            retrievalConfig: {
+              latLng: {
+                latitude: userLocation.lat,
+                longitude: userLocation.lng
+              }
+            }
+          }
+        },
+      });
+
+      const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
+      if (groundingChunks && mapInstance) {
+        // Clear previous shelter markers
+        shelterMarkers.forEach(m => m.setMap(null));
+        const newMarkers: any[] = [];
+
+        groundingChunks.forEach((chunk: any) => {
+          if (chunk.maps) {
+            // Simplified: we'd usually need geocoding for the URI, 
+            // but for demo we'll place them near user
+            const offset = (Math.random() - 0.5) * 0.05;
+            const pos = [userLocation.lng + offset, userLocation.lat + offset];
+            
+            const marker = new AMap.Marker({
+              position: pos,
+              content: `<div class="bg-blue-500 w-10 h-10 rounded-full border-4 border-white flex items-center justify-center text-white shadow-xl">
+                <span class="material-symbols-outlined text-sm">home_health</span>
+              </div>`,
+              offset: new AMap.Pixel(-20, -20),
+            });
+            
+            marker.on('click', () => {
+              window.open(chunk.maps.uri, '_blank');
+            });
+            
+            marker.setMap(mapInstance);
+            newMarkers.push(marker);
+          }
+        });
+        setShelterMarkers(newMarkers);
+        if ('vibrate' in navigator) navigator.vibrate([30, 50, 30]);
+      }
+    } catch (error) {
+      console.error("Shelter search error:", error);
+    } finally {
+      setIsSearchingShelters(false);
+    }
+  };
+
   useEffect(() => {
     if (!mapInstance) return;
 
-    // 清除旧 Marker
     markersRef.current.forEach(m => m.setMap(null));
     markersRef.current = [];
 
@@ -98,7 +152,7 @@ const MapPage: React.FC<Props> = ({ onSelectPet, userLocation, isDarkMode }) => 
 
       marker.on('click', () => {
         setSelectedPet(pet);
-        mapInstance.panTo(pos, 300); // 平滑移动
+        mapInstance.panTo(pos, 300);
         
         const infoContent = `
           <div class="apple-blur bg-ios-blur dark:bg-dark-blur p-3 rounded-2xl shadow-2xl border border-white/40 flex items-center gap-3 min-w-[220px] animate-pop">
@@ -126,32 +180,24 @@ const MapPage: React.FC<Props> = ({ onSelectPet, userLocation, isDarkMode }) => 
     });
   }, [activeCategory, mapInstance]);
 
-  // 实时同步地图样式
-  useEffect(() => {
-    if (mapInstance) {
-      mapInstance.setMapStyle(isDarkMode ? 'amap://styles/dark' : 'amap://styles/light');
-    }
-  }, [isDarkMode, mapInstance]);
-
   return (
     <div className="h-full relative overflow-hidden bg-ios-bg transition-colors duration-500">
       <div ref={mapRef} className="absolute inset-0 z-0" />
       
-      {/* 顶部综合搜索与过滤 */}
       <div className="absolute top-16 left-6 right-6 z-10 space-y-4">
-        <div className="apple-blur bg-ios-blur dark:bg-dark-blur/90 h-14 rounded-2xl shadow-2xl border border-white/20 px-4 flex items-center gap-3 animate-slide-up">
-          <span className="material-symbols-outlined text-ios-secondary">search</span>
-          <input 
-            type="text" 
-            placeholder="Search neighborhood..." 
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="flex-1 bg-transparent border-none focus:ring-0 dark:text-white font-semibold outline-none text-sm" 
-          />
-          <button className="text-ios-accent"><span className="material-symbols-outlined">mic</span></button>
+        <div className="flex gap-2 animate-slide-up">
+            <button 
+                onClick={findNearbyShelters}
+                disabled={isSearchingShelters}
+                className="flex-1 apple-blur bg-ios-accent/90 text-white h-12 rounded-2xl shadow-2xl border border-white/20 px-4 flex items-center justify-center gap-2 font-bold active:scale-95 transition-all disabled:opacity-50"
+            >
+                <span className={`material-symbols-outlined text-xl ${isSearchingShelters ? 'animate-spin' : ''}`}>
+                    {isSearchingShelters ? 'progress_activity' : 'google_plus_resale'}
+                </span>
+                <span className="text-xs uppercase tracking-widest">{t.findShelters}</span>
+            </button>
         </div>
 
-        {/* 分类筛选 Pills */}
         <div className="flex gap-2 overflow-x-auto no-scrollbar py-1 animate-fade-in">
           {['All', 'Dogs', 'Cats', 'Small'].map((cat) => (
             <button
@@ -170,33 +216,6 @@ const MapPage: React.FC<Props> = ({ onSelectPet, userLocation, isDarkMode }) => 
         </div>
       </div>
 
-      {/* “搜索此区域”动态按钮 */}
-      {showSearchHere && (
-        <div className="absolute top-44 left-0 right-0 flex justify-center z-10 animate-badge-in">
-          <button 
-            onClick={handleSearchThisArea}
-            className="apple-blur bg-ios-accent/90 text-white px-5 py-2 rounded-full shadow-2xl text-xs font-bold flex items-center gap-2 border border-white/20 active:scale-95 transition-all"
-          >
-            <span className="material-symbols-outlined text-sm">refresh</span>
-            Search this area
-          </button>
-        </div>
-      )}
-
-      {/* 右侧控制栏 */}
-      <div className="absolute right-6 top-64 z-10 flex flex-col gap-3">
-        <button 
-          onClick={() => mapInstance?.setZoomAndCenter(15, [userLocation?.lng, userLocation?.lat])}
-          className="apple-blur bg-ios-blur dark:bg-dark-blur p-3 rounded-full shadow-xl border border-white/20 active:scale-90 transition-all text-ios-accent"
-        >
-          <span className="material-symbols-outlined">my_location</span>
-        </button>
-        <button className="apple-blur bg-ios-blur dark:bg-dark-blur p-3 rounded-full shadow-xl border border-white/20 active:scale-90 transition-all text-ios-secondary">
-          <span className="material-symbols-outlined">layers</span>
-        </button>
-      </div>
-
-      {/* 底部详情卡片 - 仅在未打开 InfoWindow 或需要更深交互时显示 */}
       {selectedPet && (
         <div className="absolute bottom-6 left-6 right-6 animate-slide-up z-30">
           <div 
@@ -204,47 +223,25 @@ const MapPage: React.FC<Props> = ({ onSelectPet, userLocation, isDarkMode }) => 
             className="apple-blur bg-ios-blur dark:bg-dark-blur p-4 rounded-ios shadow-2xl border border-white/30 flex gap-4 active:scale-[0.98] transition-all cursor-pointer group"
           >
             <div className="relative w-24 h-24 rounded-2xl overflow-hidden shadow-lg border-2 border-white/50">
-              <img src={selectedPet.image} alt={selectedPet.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+              <img src={selectedPet.image} alt={selectedPet.name} className="w-full h-full object-cover" />
             </div>
             <div className="flex-1 py-1 flex flex-col justify-between">
               <div>
                 <div className="flex justify-between items-center">
                   <h3 className="text-xl font-black dark:text-white leading-tight">{selectedPet.name}</h3>
-                  <span className="text-[10px] font-black text-ios-accent bg-ios-accent/10 px-2 py-0.5 rounded uppercase">
-                    {selectedPet.distance}
-                  </span>
                 </div>
                 <p className="text-xs text-ios-secondary font-bold mt-0.5 uppercase tracking-tighter opacity-80">{selectedPet.breed}</p>
               </div>
               <div className="flex items-center gap-3">
-                <div className="flex -space-x-2">
-                  {selectedPet.personality.slice(0, 3).map((p, i) => (
-                    <div key={i} className="w-6 h-6 rounded-full bg-ios-accent/10 border border-white dark:border-dark-card flex items-center justify-center">
-                       <span className="text-[8px] font-black text-ios-accent">{p[0]}</span>
-                    </div>
-                  ))}
-                </div>
                 <span className="text-[10px] text-ios-secondary font-bold">Tap for details</span>
               </div>
             </div>
             <div className="flex items-center">
-              <div className="w-10 h-10 rounded-full bg-ios-accent/5 flex items-center justify-center text-ios-accent group-hover:bg-ios-accent group-hover:text-white transition-all">
-                <span className="material-symbols-outlined">chevron_right</span>
-              </div>
+              <span className="material-symbols-outlined text-ios-accent">chevron_right</span>
             </div>
           </div>
         </div>
       )}
-
-      <style>{`
-        .amap-info-contentContainer {
-          filter: drop-shadow(0 20px 40px rgba(0,0,0,0.2));
-        }
-        .marker-card {
-           backface-visibility: hidden;
-           -webkit-font-smoothing: subpixel-antialiased;
-        }
-      `}</style>
     </div>
   );
 };

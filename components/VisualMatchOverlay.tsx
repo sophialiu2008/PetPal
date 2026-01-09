@@ -1,7 +1,7 @@
 
 import React, { useRef, useState, useEffect } from 'react';
 import { GoogleGenAI } from "@google/genai";
-import { translations, Language } from '../translations';
+import { translations, Language } from '../translations.ts';
 
 interface Props {
   onClose: () => void;
@@ -47,7 +47,8 @@ const VisualMatchOverlay: React.FC<Props> = ({ onClose, language }) => {
     const base64Data = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const apiKey = process?.env?.API_KEY || "";
+      const ai = new GoogleGenAI({ apiKey });
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: [

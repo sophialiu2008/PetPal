@@ -1,5 +1,5 @@
 
-import { Pet } from './types';
+import { Pet } from './types.ts';
 
 export const PETS: Pet[] = [
   {
